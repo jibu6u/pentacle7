@@ -3,41 +3,56 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>EMDR 3D Globe — WebXR Demo (with Pentacle 5)</title>
+  <title>EMDR 3D Globe — WebXR Demo (Quest 2 / Desktop)</title>
   <style>
     html, body { margin:0; padding:0; background:#000; color:#eee; font-family:system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; height:100%; overflow:hidden; }
-    #ui { position: fixed; top: 12px; left: 12px; z-index: 2000; background: rgba(0,0,0,0.55); backdrop-filter: blur(4px); border:1px solid rgba(255,255,255,0.12); border-radius: 10px; padding: 10px 12px; max-width: 520px; line-height: 1.2; }
-    #ui h1 { font-size: 14px; margin: 0 0 6px; font-weight: 700; color:#fff; }
+    #ui { position: fixed; top: 12px; left: 12px; z-index: 5; background: rgba(0,0,0,0.55); backdrop-filter: blur(4px); border:1px solid rgba(255,255,255,0.12); border-radius: 10px; padding: 10px 12px; max-width: 520px; line-height: 1.2; 
+      max-height: calc(100vh - 24px); overflow:auto; box-sizing: border-box;
+    }
+    #ui h1 { font-size: 14px; margin: 0 0 6px; font-weight: 700; color:#fff; display:flex; align-items:center; justify-content:space-between; gap:8px; }
+    /* Scroll buttons */
+    .scrollBtns { display:flex; gap:6px; }
+    .scrollBtn { background:#111; color:#eee; border-radius:8px; border:1px solid #333; padding:4px 6px; cursor:pointer; font-size:12px; }
     #ui h2 { font-size: 12px; margin: 10px 0 6px; font-weight: 700; color:#fff; opacity:0.9; }
     #ui .row { display:flex; align-items:center; gap:8px; margin:6px 0; }
-    #ui label { width: 170px; font-size: 12px; color:#ddd; }
+    #ui label { width: 200px; font-size: 12px; color:#ddd; }
     #ui input[type="range"] { flex:1; }
     #ui input[type="color"] { width: 48px; height: 24px; padding: 0; border: none; }
     #ui select, #ui button { background:#111; color:#eee; border-radius:8px; border:1px solid #333; padding:6px 8px; }
     #ui button { cursor:pointer; }
     #ui button:hover { background:#1b1b1b; }
-    #hint { position: fixed; bottom: 10px; left: 12px; color:#aaa; font-size: 12px; z-index: 2000; }
-    #fileStatus, #tickStatus, #vid360Status, #vid2dStatus { font-size: 11px; color:#aaa; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 420px; }
-    #showUiBtn { position: fixed; top: 12px; left: 12px; z-index: 9999; background: rgba(17,17,17,0.95); color:#eee; border:1px solid #333; border-radius:8px; padding:6px 8px; cursor:pointer; display:none; }
-    #errorOverlay { position: fixed; left: 12px; right: 12px; top: 12px; z-index: 99999; background: rgba(128,0,0,0.9); color: #fff; padding: 10px; border-radius: 8px; display: none; font-size: 13px; max-height: 40vh; overflow:auto; }
+    #hint { position: fixed; bottom: 10px; left: 12px; color:#aaa; font-size: 12px; }
+    #fileStatus, #tickStatus, #vid360Status, #vid2dStatus { font-size: 11px; color:#aaa; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 400px; }
+    /* Color picker overlay */
+    #colorPickerOverlay { position: fixed; left: 50%; top: 50%; transform: translate(-50%,-50%); z-index: 200; background: rgba(12,12,12,0.95); padding: 12px; border-radius: 10px; border:1px solid rgba(255,255,255,0.08); display:none; box-shadow: 0 8px 24px rgba(0,0,0,0.7); }
+    #colorPickerOverlay .row { margin:6px 0; align-items:center; }
+    #svCanvas { touch-action: none; cursor: crosshair; background:#222; border-radius:6px; display:block; }
+    #hueCanvas { touch-action: none; cursor: ns-resize; margin-left:10px; border-radius:6px; display:block; }
+    #colorPreview { width:36px; height:36px; border-radius:6px; border:1px solid #222; display:inline-block; vertical-align:middle; margin-left:8px; }
+    #colorPickerOverlay .controls { display:flex; align-items:center; gap:8px; margin-top:8px; }
+    #colorHex { width:120px; padding:6px 8px; background:#111; border:1px solid #333; color:#eee; border-radius:6px; }
+    #colorPickerClose { background:#222; border:1px solid #333; color:#fff; padding:6px 8px; border-radius:6px; cursor:pointer; }
+    /* small helper on small screens */
+    @media (max-width:520px){ #ui{ left:6px; right:6px; max-width: calc(100% - 12px); } }
   </style>
 </head>
 <body>
 
 <div id="ui">
-  <h1>EMDR 3D Globe — Demo</h1>
+  <h1>
+    <span>EMDR 3D Globe — Demo</span>
+    <span class="scrollBtns">
+      <button id="scrollUp" class="scrollBtn" title="위로 스크롤">▲</button>
+      <button id="scrollDown" class="scrollBtn" title="아래로 스크롤">▼</button>
+    </span>
+  </h1>
 
+  <!-- NEW: Start button (explicit start after settings) -->
   <div class="row" style="justify-content:flex-start; gap:6px;">
     <button id="startBtn">재생 시작</button>
   </div>
 
-  <div class="row">
-    <label>색상(Color)</label>
-    <input id="color" type="color" value="#ffffff" />
-    <button id="toggleUiBtn" title="UI 숨기기/표시">UI 숨기기</button>
-    <button id="pauseBtn" title="일시정지/재생">일시정지</button>
-  </div>
-
+  <div class="row"><label>색상(Color)</label><input id="color" type="color" value="#ffffff" /></div>
   <div class="row"><label>크기(Size, m)</label><input id="size" type="range" min="0.005" max="0.30" step="0.005" value="0.06" /></div>
   <div class="row"><label>속도(Speed)</label><input id="speed" type="range" min="0.1" max="3.0" step="0.1" value="1.0" /></div>
   <div class="row"><label>머무름(Dwell s)</label><input id="dwell" type="range" min="0" max="2.0" step="0.05" value="0.40" /></div>
@@ -46,29 +61,22 @@
   <div class="row"><label>범위 Y (m)</label><input id="ampy" type="range" min="0.01" max="1.2" step="0.01" value="0.35" /></div>
   <div class="row"><label>범위 Z (m)</label><input id="ampz" type="range" min="0.01" max="1.5" step="0.01" value="0.45" /></div>
   <div class="row"><label>랜덤 이동</label><input id="randomize" type="checkbox" checked /></div>
-
   <div class="row"><label>이동 모드</label>
     <select id="moveMode">
       <option value="random">랜덤</option>
       <option value="presetAB">프리셋 A×N → B 루프</option>
-      <option value="mobiusA">모비우스 A</option>
-      <option value="mobiusB">모비우스 B</option>
-      <option value="hvLoop">HV 루프</option>
-      <option value="topLeftSet">TopLeft 세트</option>
-      <option value="complex3D9">Complex 3D9</option>
-      <option value="pentacle1">펜타클 1</option>
-      <option value="pentacle3">펜타클 3</option>
-      <option value="pentacle4">펜타클 4</option>
-      <option value="pentacle5">펜타클 5</option>
+      <option value="mobiusA">프리셋 A (모비우스 좌회전)</option>
+      <option value="mobiusB">프리셋 B (모비우스 우회전)</option>
+      <option value="hvLoop">프리셋 HV (좌→우→위→아래→좌 루프)</option>
+      <option value="topLeftSet">프리셋 TL 세트 (왼위→아래→오른위→왼쪽→북쪽끝)</option>
+      <option value="complex3D9">프리셋 3D9 (입체 9점)</option>
     </select>
   </div>
-
   <div class="row">
     <label>A 반복 횟수 (≥3)</label>
     <input id="repeatA" type="range" min="3" max="20" step="1" value="3" />
     <span id="repeatAText" style="font-size:12px; color:#ccc; width:28px; text-align:right;">3</span>
   </div>
-
   <div class="row" style="justify-content:space-between; gap:6px;">
     <button id="pick">새 타깃/리셋</button>
     <button id="centerMe">내 앞에 맞추기</button>
@@ -100,6 +108,14 @@
   <div class="row"><label>틱 볼륨</label><input id="tickVol" type="range" min="0" max="1" step="0.01" value="0.8" /></div>
   <div id="tickStatus">프리셋 또는 업로드로 선택하세요</div>
 
+  <!-- NEW: Dwell Mute Option -->
+  <hr style="border-color:#222;">
+  <h2>정지 시 무음 옵션</h2>
+  <div class="row"><label>정지 시 무음(EMDR-뮤트)</label><input id="muteOnDwell" type="checkbox" /></div>
+  <div class="row" style="font-size:11px; color:#aaa;">
+    원이 멈춰 머무는 동안 배경 오디오와 프리셋/업로드 틱 사운드를 모두 끄고, 움직임이 재개되면 자동으로 복원합니다.
+  </div>
+
   <hr style="border-color:#222;">
   <h2>360° VR 배경 비디오 (Equirectangular)</h2>
   <div class="row"><label>360 비디오</label><input id="vid360" type="file" accept="video/*" /></div>
@@ -123,26 +139,33 @@
   <div id="vid2dStatus">2D 비디오 미선택</div>
 </div>
 
-<button id="showUiBtn">UI 표시</button>
-<div id="errorOverlay"></div>
-<div id="hint">Tip: 모든 세팅 후 **재생 시작** 버튼을 누르면 구가 나타나 움직입니다. (첫 사용자 입력 후 오디오/비디오 활성화)</div>
+<!-- Custom Color Picker overlay (used in VR or when native picker not available) -->
+<div id="colorPickerOverlay" aria-hidden="true" role="dialog">
+  <div style="display:flex; gap:8px; align-items:flex-start;">
+    <canvas id="svCanvas" width="240" height="240"></canvas>
+    <canvas id="hueCanvas" width="28" height="240"></canvas>
+    <div style="display:flex; flex-direction:column; gap:8px;">
+      <div style="display:flex; align-items:center;">
+        <div id="colorPreview"></div>
+        <input id="colorHex" type="text" maxlength="7" />
+      </div>
+      <div class="controls">
+        <button id="colorApply" class="scrollBtn">적용</button>
+        <button id="colorPickerClose">닫기</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="hint">Tip: 모든 세팅 후 <b>재생 시작</b> 버튼을 누르면 구가 나타나 움직입니다. (첫 사용자 입력 후 오디오/비디오 활성화)</div>
 
 <script type="module">
   import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.module.js';
   import { VRButton } from 'https://cdn.jsdelivr.net/npm/three@0.152.2/examples/jsm/webxr/VRButton.js';
 
-  const errEl = document.getElementById('errorOverlay');
-  function showError(msg){
-    errEl.style.display = 'block';
-    errEl.textContent = msg;
-    console.error(msg);
-  }
-  window.addEventListener('error', (e)=> { showError('에러: ' + (e && e.message ? e.message : String(e))); });
-  window.addEventListener('unhandledrejection', (ev)=> { showError('Unhandled Promise Rejection: ' + (ev && ev.reason ? ev.reason : String(ev))); });
-
-  // Renderer / Scene / Camera
+  // ---------- Renderer / Scene / Camera ----------
   const renderer = new THREE.WebGLRenderer({ antialias:true, alpha:false });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.xr.enabled = true;
   document.body.appendChild(renderer.domElement);
@@ -152,24 +175,24 @@
   scene.background = new THREE.Color(0x000000);
 
   const camera = new THREE.PerspectiveCamera(70, window.innerWidth/window.innerHeight, 0.05, 100);
-  camera.position.set(0, 1.6, 0.0);
+  camera.position.set(0, 1.6, 0.0); // eye height
 
-  // Lights
+  // ---------- Lights ----------
   const amb = new THREE.AmbientLight(0xffffff, 0.35); scene.add(amb);
   const key = new THREE.PointLight(0xffffff, 1.0, 0, 2); key.position.set(2, 2, 1); scene.add(key);
 
-  // Globe
-  const baseRadius = 0.03;
+  // ---------- Globe ----------
+  const baseRadius = 0.03; // geometry radius (m)
   const geo = new THREE.SphereGeometry(baseRadius, 32, 32);
-  const mat = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0x000000, emissiveIntensity: 0.0, roughness:0.2, metalness:0.0 });
+  const mat = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 1.5, roughness:0.2, metalness:0.0 });
   const sphere = new THREE.Mesh(geo, mat);
-  sphere.visible = false;
+  sphere.visible = false; // hidden until user presses Start
   scene.add(sphere);
 
-  // Params
+  // ---------- Params ----------
   const params = {
     color: '#ffffff',
-    sphereScale: 0.06,
+    sphereScale: 0.06, // desired radius in meters
     moveSpeed: 1.0,
     dwell: 0.40,
     base: 1.8,
@@ -179,25 +202,24 @@
     randomize: true,
     moveMode: 'random',
     presetRepeatA: 3,
+    muteOnDwell: false,
   };
 
-  // Helpers & state
-  let started = false;
-  let paused = false;
-  let wasBgPlaying = false, wasVid360Playing = false, wasVid2dPlaying = false;
+  // ---------- Helpers ----------
+  let started = false; // gated start
   let currentTarget = new THREE.Vector3();
   const tmpPos = new THREE.Vector3();
   const tmpDir = new THREE.Vector3();
   const worldUp = new THREE.Vector3(0,1,0);
   let waitingAtTarget = false;
-  let turnReadyAt = 0;
-  const arrivalThreshSq = 0.02 * 0.02;
+  let turnReadyAt = 0; // ms timestamp
+  const arrivalThreshSq = 0.02 * 0.02; // ~2cm
 
   function computeCenter(out){
     if (renderer.xr.isPresenting){
       const xrCam = renderer.xr.getCamera(camera);
       xrCam.getWorldPosition(tmpPos);
-      xrCam.getWorldDirection(tmpDir);
+      xrCam.getWorldDirection(tmpDir); // forward
       out.copy(tmpPos).add(tmpDir.multiplyScalar(params.base));
     } else {
       out.set(0, 1.6, 0).add(new THREE.Vector3(0,0,-params.base));
@@ -220,7 +242,7 @@
       .add(fwd.clone().multiplyScalar(oz));
   }
 
-  // pickNewTarget (used by random mode)
+  // ---------- Target picking ----------
   function pickNewTarget(init=false){
     const center = new THREE.Vector3(); computeCenter(center);
     const offset = new THREE.Vector3(
@@ -232,7 +254,14 @@
     if (init) sphere.position.copy(currentTarget);
   }
 
-  // Path builders (preserve pentacle1/3/4)
+  // ---------- Preset path state ----------
+  let presetPhase = 'A';
+  let aRemain = params.presetRepeatA;
+  let bRemain = 1;
+  let pathPoints = [];
+  let pathIdx = 0;
+
+  // Möbius-like figure-8 in X-Z (depth emphasized)
   function buildMobiusPath(basis, hand='A'){
     const xAmp = Math.max(0.05, params.ampx);
     const zAmp = Math.max(0.05, params.ampz) * 0.85;
@@ -245,118 +274,58 @@
     }
     return pts;
   }
+  // Horizontal→Vertical loop (Left→Right→Top→Bottom→Left)
   function buildHVLoop(basis){
     const x = Math.max(0.05, params.ampx); const y = Math.max(0.05, params.ampy);
-    return [ makeRelPoint(basis,-x,0,0), makeRelPoint(basis,x,0,0), makeRelPoint(basis,0,y,0), makeRelPoint(basis,0,-y,0), makeRelPoint(basis,-x,0,0) ];
+    const leftC = makeRelPoint(basis, -x, 0, 0);
+    const rightC = makeRelPoint(basis, x, 0, 0);
+    const topC = makeRelPoint(basis, 0, y, 0);
+    const bottomC = makeRelPoint(basis, 0, -y, 0);
+    return [leftC, rightC, topC, bottomC, leftC];
   }
+  // Top-Left set (TopLeft → BottomCenter → TopRight → LeftCenter → TopLeft)
   function buildTopLeftSet(basis){
     const x = Math.max(0.05, params.ampx); const y = Math.max(0.05, params.ampy);
-    return [ makeRelPoint(basis,-x,y,0), makeRelPoint(basis,0,-y,0), makeRelPoint(basis,x,y,0), makeRelPoint(basis,-x,0,0), makeRelPoint(basis,-x,y,0) ];
+    const topLeft = makeRelPoint(basis, -x, y, 0);
+    const bottomCenter = makeRelPoint(basis, 0, -y, 0);
+    const topRight = makeRelPoint(basis, x, y, 0);
+    const leftCenter = makeRelPoint(basis, -x, 0, 0);
+    return [topLeft, bottomCenter, topRight, leftCenter, topLeft];
   }
+  // Original A/B diagonal patterns
   function buildPatternA(basis){
-    const x = Math.max(0.05, params.ampx), z = Math.max(0.05, params.ampz);
-    return [ makeRelPoint(basis,0,0,+z), makeRelPoint(basis,0,0,-z), makeRelPoint(basis,-x,0,+z), makeRelPoint(basis,+x,0,+z), makeRelPoint(basis,0,0,+z) ];
+    const x = Math.max(0.05, params.ampx); const z = Math.max(0.05, params.ampz);
+    const startBack = makeRelPoint(basis, 0, 0, +z);
+    const frontNear = makeRelPoint(basis, 0, 0, -z);
+    const leftBack  = makeRelPoint(basis, -x, 0, +z);
+    const rightBack = makeRelPoint(basis, +x, 0, +z);
+    return [startBack, frontNear, leftBack, rightBack, startBack];
   }
   function buildPatternB(basis){
-    const x = Math.max(0.05, params.ampx), z = Math.max(0.05, params.ampz);
-    return [ makeRelPoint(basis,0,0,+z), makeRelPoint(basis,0,0,-z), makeRelPoint(basis,+x,0,+z), makeRelPoint(basis,-x,0,+z), makeRelPoint(basis,0,0,+z) ];
+    const x = Math.max(0.05, params.ampx); const z = Math.max(0.05, params.ampz);
+    const startBack = makeRelPoint(basis, 0, 0, +z);
+    const frontNear = makeRelPoint(basis, 0, 0, -z);
+    const rightBack = makeRelPoint(basis, +x, 0, +z);
+    const leftBack  = makeRelPoint(basis, -x, 0, +z);
+    return [startBack, frontNear, rightBack, leftBack, startBack];
   }
+  // Complex 3D path with 9 vertices (not coplanar)
   function buildComplex3D9(basis){
-    const x = Math.max(0.05, params.ampx), y = Math.max(0.05, params.ampy), z = Math.max(0.05, params.ampz);
+    const x = Math.max(0.05, params.ampx);
+    const y = Math.max(0.05, params.ampy);
+    const z = Math.max(0.05, params.ampz);
     const pts = [];
-    pts.push(makeRelPoint(basis,-x,0.15*y,-0.20*z));
-    pts.push(makeRelPoint(basis,-0.2*x,0.80*y,0.25*z));
-    pts.push(makeRelPoint(basis,+x,0.10*y,1.00*z));
-    pts.push(makeRelPoint(basis,-0.60*x,-0.40*y,0.50*z));
-    pts.push(makeRelPoint(basis,0.0,0.20*y,-1.00*z));
-    pts.push(makeRelPoint(basis,+0.50*x,-0.50*y,-0.30*z));
-    pts.push(makeRelPoint(basis,-0.90*x,0.50*y,0.10*z));
-    pts.push(makeRelPoint(basis,+0.80*x,-0.20*y,0.20*z));
-    pts.push(makeRelPoint(basis,0.0,-1.00*y,0.60*z));
+    pts.push(makeRelPoint(basis, -x,     0.15*y, -0.20*z)); // 1 left-near (slightly up)
+    pts.push(makeRelPoint(basis, -0.2*x, 0.80*y,  0.25*z)); // 2 up & mid-depth
+    pts.push(makeRelPoint(basis,  +x,    0.10*y,  1.00*z)); // 3 right-back
+    pts.push(makeRelPoint(basis, -0.60*x,-0.40*y, 0.50*z)); // 4 left-back-down
+    pts.push(makeRelPoint(basis,  0.0,   0.20*y, -1.00*z)); // 5 center-forward
+    pts.push(makeRelPoint(basis, +0.50*x,-0.50*y,-0.30*z)); // 6 right-down-forward
+    pts.push(makeRelPoint(basis, -0.90*x, 0.50*y, 0.10*z)); // 7 far-left up
+    pts.push(makeRelPoint(basis, +0.80*x,-0.20*y, 0.20*z)); // 8 right slight down
+    pts.push(makeRelPoint(basis,  0.0,   -1.00*y, 0.60*z)); // 9 bottom center back
     return pts;
   }
-
-  function buildPentacle1(basis){
-    const spread = Math.max(0.06, Math.min(params.ampx, params.ampz) * 0.6);
-    const depthOffset = Math.max(0.05, params.ampz * 0.25);
-    const pts = []; const startAngle=-Math.PI/2;
-    for(let i=0;i<5;i++){
-      const angle = startAngle + i*(2*Math.PI/5);
-      const x = spread*Math.cos(angle);
-      const y = spread*0.25*Math.sin(angle);
-      const z = (i%2===0)? depthOffset*0.12 : -depthOffset*0.08;
-      pts.push(makeRelPoint(basis,x,y,z));
-    }
-    pts[0].add(basis.up.clone().multiplyScalar(Math.max(spread*0.6, params.ampy*0.5)));
-    return pts.concat([pts[0]]);
-  }
-
-  function buildPentacle3(basis){
-    const baseSpread = Math.max(0.06, Math.min(params.ampx, params.ampz) * 0.6);
-    const spread = baseSpread * 3.0;
-    const depthOffset = Math.max(0.05, params.ampz * 0.25) * 3.0;
-    const pts=[]; const startAngle=-Math.PI/2;
-    for(let i=0;i<5;i++){
-      const angle=startAngle + i*(2*Math.PI/5);
-      const x=spread*Math.cos(angle);
-      const y=spread*0.25*Math.sin(angle);
-      const z=(i%2===0)? depthOffset*0.12 : -depthOffset*0.08;
-      pts.push(makeRelPoint(basis,x,y,z));
-    }
-    pts[0].add(basis.up.clone().multiplyScalar(Math.max(spread*0.6, params.ampy*1.5)));
-    pts[2].add(basis.up.clone().multiplyScalar(-Math.max(spread*0.9, params.ampy*1.2)));
-    return pts.concat([pts[0]]);
-  }
-
-  function buildPentacle4(basis){
-    const baseSpread = Math.max(0.06, Math.min(params.ampx, params.ampz) * 0.6);
-    const spread = baseSpread * 3.0;
-    const depthOffset = Math.max(0.05, params.ampz * 0.25) * 3.0;
-    const pts=[]; const startAngle=-Math.PI/2;
-    for(let i=0;i<5;i++){
-      const angle=startAngle + i*(2*Math.PI/5);
-      const x=spread*Math.cos(angle);
-      const y=spread*0.25*Math.sin(angle);
-      const z=(i%2===0)? depthOffset*0.12 : -depthOffset*0.08;
-      pts.push(makeRelPoint(basis,x,y,z));
-    }
-    pts[0].add(basis.up.clone().multiplyScalar(Math.max(spread*0.6, params.ampy*1.5)));
-    // move left-side index 3 deeper (appear behind)
-    pts[3].add(basis.fwd.clone().multiplyScalar(Math.max(spread*0.8, params.ampz*0.8)));
-    return pts.concat([pts[0]]);
-  }
-
-  // NEW: Pentacle 5 — same as pentacle4 but ensure one of the middle (non-top) points is placed well below the screen
-  function buildPentacle5(basis){
-    const baseSpread = Math.max(0.06, Math.min(params.ampx, params.ampz) * 0.6);
-    const spread = baseSpread * 3.0;
-    const depthOffset = Math.max(0.05, params.ampz * 0.25) * 3.0;
-    const pts=[]; const startAngle=-Math.PI/2;
-    for(let i=0;i<5;i++){
-      const angle=startAngle + i*(2*Math.PI/5);
-      const x=spread*Math.cos(angle);
-      const y=spread*0.25*Math.sin(angle);
-      const z=(i%2===0)? depthOffset*0.12 : -depthOffset*0.08;
-      pts.push(makeRelPoint(basis,x,y,z));
-    }
-    // top boost
-    pts[0].add(basis.up.clone().multiplyScalar(Math.max(spread*0.6, params.ampy*1.5)));
-    // keep left-side depth shift from pentacle4 so shapes look similar
-    pts[3].add(basis.fwd.clone().multiplyScalar(Math.max(spread*0.8, params.ampz*0.8)));
-    // Additional: move one of the middle points (index 2) DOWN well below the screen
-    // so it appears under the screen (negative up direction)
-    const downBoost = Math.max(spread * 1.2, params.ampy * 1.8);
-    pts[2].add(basis.up.clone().multiplyScalar(-downBoost));
-    return pts.concat([pts[0]]);
-  }
-
-  // Preset state
-  let presetPhase = 'A';
-  let aRemain = params.presetRepeatA;
-  let bRemain = 1;
-  let pathPoints = [];
-  let pathIdx = 0;
-
   function chooseNextPattern(basis){
     if (presetPhase === 'A'){
       if (aRemain > 0){ aRemain--; if (aRemain === 0){ presetPhase = 'B'; bRemain = 1; } return buildPatternA(basis); }
@@ -374,12 +343,9 @@
     else if (params.moveMode === 'hvLoop') pathPoints = buildHVLoop(basis);
     else if (params.moveMode === 'topLeftSet') pathPoints = buildTopLeftSet(basis);
     else if (params.moveMode === 'complex3D9') pathPoints = buildComplex3D9(basis);
-    else if (params.moveMode === 'pentacle1') pathPoints = buildPentacle1(basis);
-    else if (params.moveMode === 'pentacle3') pathPoints = buildPentacle3(basis);
-    else if (params.moveMode === 'pentacle4') pathPoints = buildPentacle4(basis);
-    else if (params.moveMode === 'pentacle5') pathPoints = buildPentacle5(basis);
     else { const center = new THREE.Vector3(); computeCenter(center); pathPoints = [center]; }
 
+    // If we're explicitly (re)starting, place sphere at the first point and target the second immediately.
     pathIdx = 0;
     if (placeSphere && pathPoints.length > 0){
       sphere.position.copy(pathPoints[0]);
@@ -392,42 +358,211 @@
   function resetMotion(placeSphere=true){ if (params.moveMode === 'presetAB') resetPreset(placeSphere); else buildNextPath(placeSphere); }
   function nextPresetTarget(){ pathIdx++; if (!pathPoints || pathIdx >= pathPoints.length){ buildNextPath(false); pathIdx = 0; } currentTarget.copy(pathPoints[pathIdx]); }
 
-  // UI wiring
+  // ---------- UI Wiring ----------
   const $ = (sel)=>document.querySelector(sel);
   const startBtn = $('#startBtn');
   const colorEl = $('#color'); const sizeEl = $('#size'); const speedEl = $('#speed'); const dwellEl = $('#dwell');
   const baseEl  = $('#base'); const ampxEl  = $('#ampx'); const ampyEl  = $('#ampy'); const ampzEl  = $('#ampz');
   const randEl  = $('#randomize'); const pickBtn = $('#pick'); const centerBtn = $('#centerMe');
   const moveModeEl = $('#moveMode'); const repeatAEl = $('#repeatA'); const repeatAText = $('#repeatAText');
+  const muteOnDwellEl = $('#muteOnDwell');
 
-  const toggleUiBtn = $('#toggleUiBtn');
-  const pauseBtn = $('#pauseBtn');
-  const showUiBtn = $('#showUiBtn');
-  const uiEl = $('#ui');
+  // Scroll buttons (helpful in VR where wheel/drag may be absent)
+  const scrollUpBtn = $('#scrollUp'); const scrollDownBtn = $('#scrollDown'); const uiEl = $('#ui');
+  scrollUpBtn.addEventListener('click', ()=>{ uiEl.scrollBy({ top:-180, behavior:'smooth' }); });
+  scrollDownBtn.addEventListener('click', ()=>{ uiEl.scrollBy({ top:180, behavior:'smooth' }); });
 
-  // Appearance init
   function applyAppearance(){
     const desiredR = Math.max(0.005, Number(params.sphereScale));
-    const scaleFactor = desiredR / baseRadius;
+    const scaleFactor = desiredR / baseRadius; // convert radius(m) to mesh scale
     sphere.scale.setScalar(scaleFactor);
-    const c = new THREE.Color(params.color);
-    mat.color.set(c);
-    mat.emissive.set(c);
-    mat.emissiveIntensity = 0.15;
-    mat.needsUpdate = true;
+    const c = new THREE.Color(params.color); mat.color.set(c); mat.emissive.set(c); mat.emissiveIntensity = 1.4;
   }
 
-  // Audio setup
+  colorEl.value=params.color; sizeEl.value=params.sphereScale; speedEl.value=params.moveSpeed; dwellEl.value=params.dwell; baseEl.value=params.base; ampxEl.value=params.ampx; ampyEl.value=params.ampy; ampzEl.value=params.ampz; randEl.checked=params.randomize; moveModeEl.value=params.moveMode; repeatAEl.value=params.presetRepeatA; repeatAText.textContent=String(params.presetRepeatA); muteOnDwellEl.checked=params.muteOnDwell; applyAppearance();
+
+  function startExperience(){
+    // show sphere & arm motion
+    try { if (audioCtx.state==='suspended') audioCtx.resume(); } catch {}
+    started = true; sphere.visible = true; waitingAtTarget = false; turnReadyAt = 0; mutedForDwell = false; // reset dwell mute
+    if (params.moveMode === 'random'){
+      const center = new THREE.Vector3(); computeCenter(center); sphere.position.copy(center); pickNewTarget(false);
+    } else {
+      resetMotion(true);
+    }
+  }
+
+  startBtn.addEventListener('click', startExperience);
+
+  // Color handling: use native color picker on non-VR; use custom canvas picker while in VR
+  const colorPickerOverlay = $('#colorPickerOverlay');
+  const svCanvas = $('#svCanvas'); const hueCanvas = $('#hueCanvas'); const colorPreview = $('#colorPreview'); const colorHex = $('#colorHex');
+  const colorApplyBtn = $('#colorApply'); const colorCloseBtn = $('#colorPickerClose');
+  let pickerHue = 0, pickerS = 1, pickerV = 1;
+  function hsvToRgb(h,s,v){
+    const c = v * s;
+    const x = c * (1 - Math.abs((h/60)%2 - 1));
+    const m = v - c;
+    let r=0,g=0,b=0;
+    if (h<60){ r=c; g=x; b=0; } else if (h<120){ r=x; g=c; b=0; } else if (h<180){ r=0; g=c; b=x; } else if (h<240){ r=0; g=x; b=c; } else if (h<300){ r=x; g=0; b=c; } else { r=c; g=0; b=x; }
+    return { r: Math.round((r+m)*255), g: Math.round((g+m)*255), b: Math.round((b+m)*255) };
+  }
+  function rgbToHex(r,g,b){ return '#'+[r,g,b].map(x=>('0'+x.toString(16)).slice(-2)).join(''); }
+  function hexToRgb(hex){
+    if (!hex) return null;
+    const m = hex.replace('#','');
+    if (m.length===3) { return { r: parseInt(m[0]+m[0],16), g: parseInt(m[1]+m[1],16), b: parseInt(m[2]+m[2],16) }; }
+    if (m.length===6) { return { r: parseInt(m.slice(0,2),16), g: parseInt(m.slice(2,4),16), b: parseInt(m.slice(4,6),16) }; }
+    return null;
+  }
+  function updateColorPreview(){
+    const rgb = hsvToRgb(pickerHue, pickerS, pickerV);
+    colorPreview.style.background = rgbToHex(rgb.r,rgb.g,rgb.b);
+    colorHex.value = rgbToHex(rgb.r,rgb.g,rgb.b);
+  }
+  function drawHue(){
+    const ctx = hueCanvas.getContext('2d');
+    const w = hueCanvas.width, h = hueCanvas.height;
+    const img = ctx.createLinearGradient(0,0,0,h);
+    for(let i=0;i<=360;i+=5){ img.addColorStop(i/360, `hsl(${i} 100% 50%)`); }
+    ctx.fillStyle = img;
+    ctx.fillRect(0,0,w,h);
+    // marker
+    const y = Math.round((pickerHue/360) * (h-1));
+    ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.beginPath(); ctx.rect(0, y-2, w, 4); ctx.stroke();
+  }
+  function drawSV(){
+    const ctx = svCanvas.getContext('2d');
+    const w = svCanvas.width, h = svCanvas.height;
+    // fill with hue color
+    ctx.fillStyle = `hsl(${pickerHue} 100% 50%)`;
+    ctx.fillRect(0,0,w,h);
+    // overlay white-to-transparent (saturation) left->right
+    const sat = ctx.createLinearGradient(0,0,w,0);
+    sat.addColorStop(0,'#fff'); sat.addColorStop(1,'rgba(255,255,255,0)');
+    ctx.fillStyle = sat; ctx.fillRect(0,0,w,h);
+    // overlay transparent->black (value) top->bottom
+    const val = ctx.createLinearGradient(0,0,0,h);
+    val.addColorStop(0,'rgba(0,0,0,0)'); val.addColorStop(1,'#000');
+    ctx.fillStyle = val; ctx.fillRect(0,0,w,h);
+    // marker
+    const mx = Math.round(pickerS * (w-1));
+    const my = Math.round((1 - pickerV) * (h-1));
+    ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(mx,my,8,0,Math.PI*2); ctx.stroke();
+  }
+  function openColorPicker(initialHex){
+    // initialize from hex if given
+    if (initialHex){
+      const rgb = hexToRgb(initialHex);
+      if (rgb){
+        // convert rgb->hsv (approx)
+        const r = rgb.r/255, g = rgb.g/255, b = rgb.b/255;
+        const max = Math.max(r,g,b), min = Math.min(r,g,b), d = max - min;
+        let h = 0;
+        if (d===0) h = 0;
+        else if (max===r) h = ((g-b)/d)%6 * 60;
+        else if (max===g) h = ((b-r)/d + 2) * 60;
+        else h = ((r-g)/d + 4) * 60;
+        if (h<0) h += 360;
+        const s = max === 0 ? 0 : d / max;
+        const v = max;
+        pickerHue = Math.round(h); pickerS = s; pickerV = v;
+      }
+    }
+    updateColorPreview(); drawHue(); drawSV();
+    colorPickerOverlay.style.display='block'; colorPickerOverlay.setAttribute('aria-hidden','false');
+  }
+  function closeColorPicker(){ colorPickerOverlay.style.display='none'; colorPickerOverlay.setAttribute('aria-hidden','true'); }
+
+  // Canvas interaction helpers
+  function getCanvasPos(canvas, evt){
+    const rect = canvas.getBoundingClientRect();
+    const x = (evt.clientX - rect.left) * (canvas.width / rect.width);
+    const y = (evt.clientY - rect.top) * (canvas.height / rect.height);
+    return { x, y };
+  }
+  // Pointer handlers for hue and sv
+  let svActive=false, hueActive=false;
+  svCanvas.addEventListener('pointerdown', (e)=>{ e.preventDefault(); svActive=true; svCanvas.setPointerCapture(e.pointerId); const p=getCanvasPos(svCanvas,e); pickerS = Math.min(1, Math.max(0, p.x / svCanvas.width)); pickerV = Math.min(1, Math.max(0, 1 - (p.y / svCanvas.height))); updateColorPreview(); drawSV(); });
+  svCanvas.addEventListener('pointermove', (e)=>{ if(!svActive) return; const p=getCanvasPos(svCanvas,e); pickerS = Math.min(1, Math.max(0, p.x / svCanvas.width)); pickerV = Math.min(1, Math.max(0, 1 - (p.y / svCanvas.height))); updateColorPreview(); drawSV(); });
+  svCanvas.addEventListener('pointerup', (e)=>{ if(!svActive) return; svActive=false; svCanvas.releasePointerCapture(e.pointerId); });
+  hueCanvas.addEventListener('pointerdown', (e)=>{ e.preventDefault(); hueActive=true; hueCanvas.setPointerCapture(e.pointerId); const p=getCanvasPos(hueCanvas,e); pickerHue = Math.round((p.y / hueCanvas.height) * 360); updateColorPreview(); drawHue(); drawSV(); });
+  hueCanvas.addEventListener('pointermove', (e)=>{ if(!hueActive) return; const p=getCanvasPos(hueCanvas,e); pickerHue = Math.round((p.y / hueCanvas.height) * 360); updateColorPreview(); drawHue(); drawSV(); });
+  hueCanvas.addEventListener('pointerup', (e)=>{ if(!hueActive) return; hueActive=false; hueCanvas.releasePointerCapture(e.pointerId); });
+
+  colorHex.addEventListener('change', ()=>{ const c = colorHex.value.trim(); const rgb = hexToRgb(c); if (rgb){ // update picker
+      const r = rgb.r/255, g = rgb.g/255, b = rgb.b/255;
+      const max = Math.max(r,g,b), min = Math.min(r,g,b), d = max - min;
+      let h = 0;
+      if (d===0) h = 0;
+      else if (max===r) h = ((g-b)/d)%6 * 60;
+      else if (max===g) h = ((b-r)/d + 2) * 60;
+      else h = ((r-g)/d + 4) * 60;
+      if (h<0) h += 360;
+      const s = max === 0 ? 0 : d / max;
+      const v = max;
+      pickerHue = Math.round(h); pickerS = s; pickerV = v;
+      updateColorPreview(); drawHue(); drawSV();
+    }
+  });
+
+  colorApplyBtn.addEventListener('click', ()=>{
+    const rgb = hsvToRgb(pickerHue, pickerS, pickerV);
+    params.color = rgbToHex(rgb.r,rgb.g,rgb.b);
+    colorEl.value = params.color;
+    applyAppearance();
+    closeColorPicker();
+  });
+  colorCloseBtn.addEventListener('click', ()=>{ closeColorPicker(); });
+
+  // Open custom color picker when in VR; otherwise let native open
+  colorEl.addEventListener('click', (e)=>{
+    if (renderer.xr.isPresenting){
+      e.preventDefault(); // prevent any native behavior
+      openColorPicker(params.color || colorEl.value);
+    } else {
+      // In non-VR keep native; but sync if user picks native color afterwards
+      // We'll listen to input event to update params
+    }
+  });
+  colorEl.addEventListener('input', (e)=>{ params.color = e.target.value; applyAppearance(); });
+
+  // Resize handler for canvases in case DPI differs
+  function resizePickerCanvases(){
+    // keep internal pixel size matching CSS pixels for crisp rendering (we set canvas width/height in attributes)
+    // If you want to adapt on different sizes, you can change attrs here.
+    drawHue(); drawSV(); updateColorPreview();
+  }
+  window.addEventListener('resize', resizePickerCanvases);
+
+  sizeEl.addEventListener('input',  e=>{ params.sphereScale=Number(e.target.value); applyAppearance(); });
+  speedEl.addEventListener('input', e=>{ params.moveSpeed=Number(e.target.value); });
+  dwellEl.addEventListener('input', e=>{ params.dwell=Number(e.target.value); });
+  baseEl.addEventListener('input',  e=>{ params.base=Number(e.target.value); if (started && params.moveMode!=='random') resetMotion(false); });
+  ampxEl.addEventListener('input',  e=>{ params.ampx=Math.max(0.01,Number(e.target.value)); if (started && params.moveMode!=='random') resetMotion(false); });
+  ampyEl.addEventListener('input',  e=>{ params.ampy=Math.max(0.01,Number(e.target.value)); });
+  ampzEl.addEventListener('input',  e=>{ params.ampz=Math.max(0.01,Number(e.target.value)); if (started && params.moveMode!=='random') resetMotion(false); });
+  randEl.addEventListener('change', e=>{ params.randomize=e.target.checked; });
+  moveModeEl.addEventListener('change', ()=>{ params.moveMode=moveModeEl.value; if (started) resetMotion(true); });
+  repeatAEl.addEventListener('input', ()=>{ const v=Math.max(3,Math.floor(Number(repeatAEl.value))); params.presetRepeatA=v; repeatAText.textContent=String(v); if (presetPhase==='A') aRemain=Math.max(1,v); });
+  pickBtn.addEventListener('click', ()=>{ if(!started) return; try{ if (audioCtx.state==='suspended') audioCtx.resume(); }catch{} resetMotion(true); });
+  centerBtn.addEventListener('click', ()=>{ if(!started) return; resetMotion(true); });
+  muteOnDwellEl.addEventListener('change', ()=>{ params.muteOnDwell = muteOnDwellEl.checked; if (!params.muteOnDwell && mutedForDwell) releaseDwellMute(); });
+
+  // ---------- Audio: Web Audio (bg loop + tick) ----------
   const AudioContextClass = window.AudioContext || window.webkitAudioContext; const audioCtx = new AudioContextClass();
   window.addEventListener('pointerdown', ()=>{ if (audioCtx.state === 'suspended') audioCtx.resume(); }, { once:true });
 
-  // Background audio
+  // Background loop
   const audioEl = new Audio(); audioEl.loop = true; let bgSourceNode = null; const bgGain = audioCtx.createGain(); bgGain.gain.value=1.0; bgGain.connect(audioCtx.destination);
   const audioFile = $('#audioFile'); const fileStatus=$('#fileStatus'); const bgVol=$('#bgVol');
-  audioFile.addEventListener('change', ()=>{ const f=audioFile.files && audioFile.files[0]; if(!f){ fileStatus.textContent='오디오 미선택'; return; } const url=URL.createObjectURL(f); audioEl.src=url; if(!bgSourceNode){ try{ bgSourceNode=audioCtx.createMediaElementSource(audioEl); bgSourceNode.connect(bgGain);}catch(e){} } audioEl.play().then(()=>{ fileStatus.textContent=`재생 중: ${f.name}`; if(audioCtx.state==='suspended') audioCtx.resume(); }).catch(()=>{ fileStatus.textContent=`로드됨: ${f.name} (사용자 입력 후 재생)`; }); });
-  bgVol.addEventListener('input', e=>{ bgGain.gain.value=Number(e.target.value); });
+  audioFile.addEventListener('change', ()=>{ const f=audioFile.files && audioFile.files[0]; if(!f){ fileStatus.textContent='오디오 미선택'; return; } const url=URL.createObjectURL(f); audioEl.src=url; if(!bgSourceNode){ bgSourceNode=audioCtx.createMediaElementSource(audioEl); bgSourceNode.connect(bgGain);} audioEl.play().then(()=>{ fileStatus.textContent=`재생 중: ${f.name}`; if(audioCtx.state==='suspended') audioCtx.resume(); }).catch(()=>{ fileStatus.textContent=`로드됨: ${f.name} (사용자 입력 후 재생)`; }); });
 
-  // Tick sound handling
+  // Keep a target volume so we can restore after dwell-mute
+  let bgVolValue = Number(bgVol.value || 1.0);
+  bgVol.addEventListener('input', e=>{ bgVolValue = Number(e.target.value); if(!mutedForDwell) bgGain.gain.value = bgVolValue; });
+
+  // Tick preset/upload
   const tickGain = audioCtx.createGain(); tickGain.gain.value=0.8; tickGain.connect(audioCtx.destination);
   let tickBuffer=null; const tickFile=$('#tickFile'); const tickVol=$('#tickVol'); const tickStatus=$('#tickStatus');
   const tickPresetEl=document.getElementById('tickPreset'); const testPresetBtn=document.getElementById('testPreset');
@@ -445,19 +580,46 @@
     case 'wood':{ const s=audioCtx.createBufferSource(); s.buffer=makeNoiseBuffer(0.06); const bp=audioCtx.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=1600; bp.Q.value=20; const g=envGainNode(t,0.001,0.05); s.connect(bp).connect(g).connect(tickGain); s.start(t); s.stop(t+0.07);} break;
     default: break; }
   }
-  function playTurnTick(){ const preset=tickPresetEl.value; if (preset && preset!=='none'){ playPreset(preset); tickStatus.textContent=`프리셋 재생: ${tickPresetEl.options[tickPresetEl.selectedIndex].text}`; } else if (tickBuffer){ const s=audioCtx.createBufferSource(); s.buffer=tickBuffer; s.connect(tickGain); try{s.start(0);}catch{} tickStatus.textContent='업로드 파일 재생'; } else { tickStatus.textContent='프리셋 또는 업로드된 사운드가 없습니다'; } }
+  function playTurnTick(){
+    const preset=tickPresetEl.value;
+    if (preset && preset!=='none'){
+      playPreset(preset); tickStatus.textContent=`프리셋 재생: ${tickPresetEl.options[tickPresetEl.selectedIndex].text}`;
+    } else if (tickBuffer){
+      const s=audioCtx.createBufferSource(); s.buffer=tickBuffer; s.connect(tickGain); try{s.start(0);}catch{} tickStatus.textContent='업로드 파일 재생';
+    } else {
+      tickStatus.textContent='프리셋 또는 업로드된 사운드가 없습니다';
+    }
+  }
   document.getElementById('testPreset').addEventListener('click', ()=>{ try{ if (audioCtx.state==='suspended') audioCtx.resume(); }catch{} playTurnTick(); });
 
-  // 360 video
+  // ---------- Dwell Mute helpers (NEW) ----------
+  let mutedForDwell = false;
+  function engageDwellMute(){
+    if (mutedForDwell) return;
+    mutedForDwell = true;
+    const t = audioCtx.currentTime;
+    try { bgGain.gain.cancelScheduledValues(t); } catch {}
+    // quick fade to avoid clicks
+    bgGain.gain.setTargetAtTime(0.0001, t, 0.02);
+  }
+  function releaseDwellMute(){
+    if (!mutedForDwell) return;
+    mutedForDwell = false;
+    const t = audioCtx.currentTime;
+    try { bgGain.gain.cancelScheduledValues(t); } catch {}
+    bgGain.gain.setTargetAtTime(bgVolValue, t, 0.02);
+  }
+
+  // ---------- 360 Video Background ----------
   const vid360El=document.createElement('video'); vid360El.crossOrigin='anonymous'; vid360El.playsInline=true; vid360El.loop=true; vid360El.muted=false;
   let vid360Tex=null; let vid360SrcNode=null; const gain360=audioCtx.createGain(); gain360.gain.value=0.8; gain360.connect(audioCtx.destination);
   const vid360Input=$('#vid360'); const vid360Status=$('#vid360Status'); const play360Btn=$('#play360'); const clear360Btn=$('#clear360'); const vol360=$('#vol360');
-  vid360Input.addEventListener('change', ()=>{ const f=vid360Input.files && vid360Input.files[0]; if(!f){ vid360Status.textContent='360 비디오 미선택'; return; } const url=URL.createObjectURL(f); vid360El.src=url; vid360El.load(); vid360Tex=new THREE.VideoTexture(vid360El); vid360Tex.colorSpace=THREE.SRGBColorSpace; vid360Tex.mapping=THREE.EquirectangularReflectionMapping; vid360Tex.minFilter=THREE.LinearFilter; vid360Tex.magFilter=THREE.LinearFilter; vid360Tex.generateMipmaps=false; scene.background=vid360Tex; if(!vid360SrcNode){ try{ vid360SrcNode=audioCtx.createMediaElementSource(vid360El); vid360SrcNode.connect(gain360);}catch(e){} } vid360El.play().then(()=>{ vid360Status.textContent=`360 재생 중: ${f.name}`; try{ if(audioCtx.state==='suspended') audioCtx.resume(); }catch{} }).catch(()=>{ vid360Status.textContent=`360 로드됨: ${f.name} (재생 버튼을 누르세요)`; }); });
+  vid360Input.addEventListener('change', ()=>{ const f=vid360Input.files && vid360Input.files[0]; if(!f){ vid360Status.textContent='360 비디오 미선택'; return; } const url=URL.createObjectURL(f); vid360El.src=url; vid360El.load(); vid360Tex=new THREE.VideoTexture(vid360El); vid360Tex.colorSpace=THREE.SRGBColorSpace; vid360Tex.mapping=THREE.EquirectangularReflectionMapping; vid360Tex.minFilter=THREE.LinearFilter; vid360Tex.magFilter=THREE.LinearFilter; vid360Tex.generateMipmaps=false; scene.background=vid360Tex; if(!vid360SrcNode){ vid360SrcNode=audioCtx.createMediaElementSource(vid360El); vid360SrcNode.connect(gain360);} vid360El.play().then(()=>{ vid360Status.textContent=`360 재생 중: ${f.name}`; try{ if(audioCtx.state==='suspended') audioCtx.resume(); }catch{} }).catch(()=>{ vid360Status.textContent=`360 로드됨: ${f.name} (재생 버튼을 누르세요)`; }); });
   play360Btn.addEventListener('click', ()=>{ if(vid360El.paused) vid360El.play(); else vid360El.pause(); });
   clear360Btn.addEventListener('click', ()=>{ scene.background=new THREE.Color(0x000000); if(vid360Tex){ vid360Tex.dispose(); vid360Tex=null; } try{ vid360El.pause(); }catch{} vid360El.src=''; vid360Status.textContent='배경 비움'; });
   vol360.addEventListener('input', e=>{ gain360.gain.value=Number(e.target.value); });
 
-  // 2D screen
+  // ---------- 2D Video Screen ----------
   const screenGroup=new THREE.Group(); scene.add(screenGroup);
   const screenGeo=new THREE.PlaneGeometry(2.4,1.35,1,1); const screenMat=new THREE.MeshBasicMaterial({ color:0xffffff, side:THREE.DoubleSide }); const screenMesh=new THREE.Mesh(screenGeo,screenMat); screenGroup.add(screenMesh); screenGroup.visible=false;
   let vid2dEl=document.createElement('video'); vid2dEl.crossOrigin='anonymous'; vid2dEl.playsInline=true; vid2dEl.loop=true; vid2dEl.muted=false;
@@ -465,99 +627,82 @@
   const vid2dInput=$('#vid2d'); const vid2dStatus=$('#vid2dStatus'); const play2dBtn=$('#play2d'); const hide2dBtn=$('#hide2d'); const vol2d=$('#vol2d'); const screenDist=$('#screenDist'); const screenWidth=$('#screenWidth');
   function updateScreenTransform(){ const dist=Number(screenDist.value); const xrCam=renderer.xr.isPresenting?renderer.xr.getCamera(camera):camera; xrCam.getWorldPosition(tmpPos); xrCam.getWorldDirection(tmpDir); screenGroup.position.copy(tmpPos).add(tmpDir.multiplyScalar(dist)); screenGroup.lookAt(tmpPos); }
   function applyScreenSize(){ const w=Number(screenWidth.value); let aspect=16/9; if(vid2dEl.videoWidth>0) aspect=vid2dEl.videoWidth/Math.max(1,vid2dEl.videoHeight); const h=w/aspect; screenMesh.scale.set(w/2.4, h/1.35, 1); }
-  vid2dInput.addEventListener('change', ()=>{ const f=vid2dInput.files && vid2dInput.files[0]; if(!f){ vid2dStatus.textContent='2D 비디오 미선택'; return; } const url=URL.createObjectURL(f); vid2dEl.src=url; vid2dEl.load(); vid2dEl.onloadedmetadata=()=>{ applyScreenSize(); }; vid2dTex=new THREE.VideoTexture(vid2dEl); vid2dTex.colorSpace=THREE.SRGBColorSpace; vid2dTex.minFilter=THREE.LinearFilter; vid2dTex.magFilter=THREE.LinearFilter; vid2dTex.generateMipmaps=false; screenMat.map=vid2dTex; screenMat.needsUpdate=true; if(!vid2dSrcNode){ try{ vid2dSrcNode=audioCtx.createMediaElementSource(vid2dEl); vid2dSrcNode.connect(gain2d);}catch(e){} } screenGroup.visible=true; updateScreenTransform(); vid2dEl.play().then(()=>{ vid2dStatus.textContent=`2D 재생 중: ${f.name}`; try{ if(audioCtx.state==='suspended') audioCtx.resume(); }catch{} }).catch(()=>{ vid2dStatus.textContent=`2D 로드됨: ${f.name} (재생 버튼을 누르세요)`; }); });
+  vid2dInput.addEventListener('change', ()=>{ const f=vid2dInput.files && vid2dInput.files[0]; if(!f){ vid2dStatus.textContent='2D 비디오 미선택'; return; } const url=URL.createObjectURL(f); vid2dEl.src=url; vid2dEl.load(); vid2dEl.onloadedmetadata=()=>{ applyScreenSize(); }; vid2dTex=new THREE.VideoTexture(vid2dEl); vid2dTex.colorSpace=THREE.SRGBColorSpace; vid2dTex.minFilter=THREE.LinearFilter; vid2dTex.magFilter=THREE.LinearFilter; vid2dTex.generateMipmaps=false; screenMat.map=vid2dTex; screenMat.needsUpdate=true; if(!vid2dSrcNode){ vid2dSrcNode=audioCtx.createMediaElementSource(vid2dEl); vid2dSrcNode.connect(gain2d);} screenGroup.visible=true; updateScreenTransform(); vid2dEl.play().then(()=>{ vid2dStatus.textContent=`2D 재생 중: ${f.name}`; try{ if(audioCtx.state==='suspended') audioCtx.resume(); }catch{} }).catch(()=>{ vid2dStatus.textContent=`2D 로드됨: ${f.name} (재생 버튼을 누르세요)`; }); });
   play2dBtn.addEventListener('click', ()=>{ if(vid2dEl.paused) vid2dEl.play(); else vid2dEl.pause(); });
   hide2dBtn.addEventListener('click', ()=>{ screenGroup.visible=!screenGroup.visible; });
   vol2d.addEventListener('input', e=>{ gain2d.gain.value=Number(e.target.value); });
   screenDist.addEventListener('input', ()=>{ updateScreenTransform(); });
   screenWidth.addEventListener('input', ()=>{ applyScreenSize(); });
 
-  // Resize
-  window.addEventListener('resize', ()=>{ camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); });
+  // ---------- Resize ----------
+  window.addEventListener('resize', ()=>{ camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); resizePickerCanvases(); });
 
-  // Init UI values
-  colorEl.value=params.color; sizeEl.value=params.sphereScale; speedEl.value=params.moveSpeed; dwellEl.value=params.dwell; baseEl.value=params.base; ampxEl.value=params.ampx; ampyEl.value=params.ampy; ampzEl.value=params.ampz; randEl.checked=params.randomize; moveModeEl.value=params.moveMode; repeatAEl.value=params.presetRepeatA; repeatAText.textContent=String(params.presetRepeatA); applyAppearance();
-
-  // Start logic
-  function startExperience(){
-    try { if (audioCtx.state==='suspended') audioCtx.resume(); } catch {}
-    started = true; paused = false; sphere.visible = true; waitingAtTarget = false; turnReadyAt = 0;
-    if (params.moveMode === 'random'){
-      const center = new THREE.Vector3(); computeCenter(center); sphere.position.copy(center); pickNewTarget(false);
-    } else {
-      resetMotion(true);
-    }
-  }
-  startBtn.addEventListener('click', startExperience);
-
-  // Other UI handlers
-  colorEl.addEventListener('input', e=>{ params.color=e.target.value; applyAppearance(); });
-  sizeEl.addEventListener('input',  e=>{ params.sphereScale=Number(e.target.value); applyAppearance(); });
-  speedEl.addEventListener('input', e=>{ params.moveSpeed=Number(e.target.value); });
-  dwellEl.addEventListener('input', e=>{ params.dwell=Number(e.target.value); });
-  baseEl.addEventListener('input',  e=>{ params.base=Number(e.target.value); if (started && params.moveMode!=='random') resetMotion(false); });
-  ampxEl.addEventListener('input',  e=>{ params.ampx=Math.max(0.01,Number(e.target.value)); if (started && params.moveMode!=='random') resetMotion(false); });
-  ampyEl.addEventListener('input',  e=>{ params.ampy=Math.max(0.01,Number(e.target.value)); });
-  ampzEl.addEventListener('input',  e=>{ params.ampz=Math.max(0.01,Number(e.target.value)); if (started && params.moveMode!=='random') resetMotion(false); });
-  randEl.addEventListener('change', e=>{ params.randomize=e.target.checked; });
-  moveModeEl.addEventListener('change', ()=>{ params.moveMode=moveModeEl.value; if (started) resetMotion(true); });
-  repeatAEl.addEventListener('input', ()=>{ const v=Math.max(3,Math.floor(Number(repeatAEl.value))); params.presetRepeatA=v; repeatAText.textContent=String(v); if (presetPhase==='A') aRemain=Math.max(1,v); });
-  pickBtn.addEventListener('click', ()=>{ if(!started) return; try{ if (audioCtx.state==='suspended') audioCtx.resume(); }catch{} resetMotion(true); });
-  centerBtn.addEventListener('click', ()=>{ if(!started) return; resetMotion(true); });
-
-  // Toggle UI
-  toggleUiBtn.addEventListener('click', ()=>{
-    if (uiEl.style.display === 'none'){ uiEl.style.display = ''; showUiBtn.style.display = 'none'; toggleUiBtn.textContent = 'UI 숨기기'; }
-    else { uiEl.style.display = 'none'; showUiBtn.style.display = 'block'; showUiBtn.focus(); }
-  });
-  showUiBtn.addEventListener('click', ()=>{ uiEl.style.display = ''; showUiBtn.style.display = 'none'; toggleUiBtn.textContent = 'UI 숨기기'; });
-
-  // Pause/resume (also pauses media)
-  pauseBtn.addEventListener('click', async ()=>{
-    paused = !paused;
-    if (paused){
-      try { wasBgPlaying = !!(audioEl && !audioEl.paused && audioEl.currentTime > 0 && !audioEl.ended); } catch(e){ wasBgPlaying = false; }
-      try { wasVid360Playing = !!(vid360El && !vid360El.paused && vid360El.currentTime > 0 && !vid360El.ended); } catch(e){ wasVid360Playing = false; }
-      try { wasVid2dPlaying = !!(vid2dEl && !vid2dEl.paused && vid2dEl.currentTime > 0 && !vid2dEl.ended); } catch(e){ wasVid2dPlaying = false; }
-
-      try { if (audioEl && !audioEl.paused) audioEl.pause(); } catch(e){}
-      try { if (vid360El && !vid360El.paused) vid360El.pause(); } catch(e){}
-      try { if (vid2dEl && !vid2dEl.paused) vid2dEl.pause(); } catch(e){}
-
-      pauseBtn.textContent = '재생';
-      pauseBtn.title = '다시 재생';
-    } else {
-      try { if (audioCtx.state === 'suspended') await audioCtx.resume(); } catch(e){}
-      try { if (audioEl && wasBgPlaying) { await audioEl.play().catch(()=>{}); } } catch(e){}
-      try { if (vid360El && wasVid360Playing) { await vid360El.play().catch(()=>{}); } } catch(e){}
-      try { if (vid2dEl && wasVid2dPlaying) { await vid2dEl.play().catch(()=>{}); } } catch(e){}
-
-      pauseBtn.textContent = '일시정지';
-      pauseBtn.title = '일시정지';
-    }
-  });
-
-  // Animate loop
+  // ---------- Animate ----------
   const clock=new THREE.Clock();
   renderer.setAnimationLoop(()=>{
     const dt=clock.getDelta();
 
-    if (screenGroup.visible) updateScreenTransform();
-
-    if (!started){ renderer.render(scene,camera); return; }
-    if (paused){ renderer.render(scene,camera); return; }
+    if (!started){
+      if (screenGroup.visible) updateScreenTransform();
+      renderer.render(scene,camera);
+      return;
+    }
 
     const followRate=THREE.MathUtils.lerp(2.0,6.0,THREE.MathUtils.clamp(params.moveSpeed,0.1,3.0));
     sphere.position.lerp(currentTarget, THREE.MathUtils.clamp(dt*followRate,0,1));
 
     const arrived=sphere.position.distanceToSquared(currentTarget)<arrivalThreshSq; const now=performance.now();
-    if(arrived && !waitingAtTarget){ waitingAtTarget=true; turnReadyAt=now + params.dwell*1000; playTurnTick(); }
-    if(waitingAtTarget && now>=turnReadyAt){ waitingAtTarget=false; if(params.moveMode==='random'){ if(params.randomize) pickNewTarget(false); } else { nextPresetTarget(); } }
+    if(arrived && !waitingAtTarget){
+      waitingAtTarget=true; turnReadyAt=now + params.dwell*1000;
+      if (params.muteOnDwell){
+        engageDwellMute();
+        tickStatus.textContent='정지 시 무음(프리셋/업로드 미재생)';
+      } else {
+        playTurnTick();
+      }
+    }
+    if(waitingAtTarget && now>=turnReadyAt){
+      waitingAtTarget=false;
+      if(params.moveMode==='random'){ if(params.randomize) pickNewTarget(false); } else { nextPresetTarget(); }
+      if (params.muteOnDwell) releaseDwellMute();
+    }
 
+    if(screenGroup.visible) updateScreenTransform();
     renderer.render(scene,camera);
   });
 
-  console.log('Script initialized — ready. Press "재생 시작" to show the globe.');
+  // ---------- Minimal self-tests (console) ----------
+  (function selfTests(){
+    try{
+      const mm = document.getElementById('moveMode');
+      console.assert(mm instanceof HTMLSelectElement, 'moveMode select exists');
+      console.assert(Array.from(mm.options).some(o=>o.value==='complex3D9'), '3D9 option present');
+      const basis = computeBasis();
+      // builders
+      console.assert(buildPatternA(basis).length===5, 'Pattern A has 5 points');
+      console.assert(buildPatternB(basis).length===5, 'Pattern B has 5 points');
+      console.assert(buildMobiusPath(basis,'A').length>2, 'Mobius A builds');
+      console.assert(buildMobiusPath(basis,'B').length>2, 'Mobius B builds');
+      console.assert(buildHVLoop(basis).length>=5, 'HV loop builds');
+      console.assert(buildTopLeftSet(basis).length>=5, 'TopLeft set builds');
+      const c9 = buildComplex3D9(basis); console.assert(c9.length===9, '3D9 has 9 points');
+      const ys = new Set(c9.map(p=>p.y.toFixed(3))); const zs = new Set(c9.map(p=>p.z.toFixed(3))); console.assert(ys.size>1 && zs.size>1, '3D9 is not coplanar');
+      // buildNextPath for each mode
+      const modes=['presetAB','mobiusA','mobiusB','hvLoop','topLeftSet','complex3D9'];
+      for(const m of modes){ params.moveMode=m; buildNextPath(true); console.assert(Array.isArray(pathPoints) && pathPoints.length>0, `buildNextPath ok for ${m}`); const dist = sphere.position.distanceTo(currentTarget); console.assert(pathPoints.length===1 || dist>1e-6, `target armed for ${m}`); }
+      // start gating
+      started=false; sphere.visible=false; params.moveMode='hvLoop'; startExperience(); console.assert(started && sphere.visible, 'Start shows sphere'); console.assert(sphere.position.distanceTo(currentTarget)>1e-6, 'Start arms movement');
+      // size mapping
+      params.sphereScale = 0.12; applyAppearance(); const expectedScale = 0.12/baseRadius; console.assert(Math.abs(sphere.scale.x-expectedScale) < 1e-6, 'Sphere size maps radius→scale');
+      params.moveMode='random';
+      console.log('[self-tests] passed');
+    }catch(e){ console.warn('Self-tests failed:', e); }
+  })();
+
+  // initialize editor canvases
+  resizePickerCanvases();
+  drawHue(); drawSV(); updateColorPreview();
+
 </script>
 </body>
 </html>
